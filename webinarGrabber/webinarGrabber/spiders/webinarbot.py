@@ -14,10 +14,10 @@ class WebinarbotSpider(scrapy.Spider):
     ]
     start_urls = [
         'https://sci.pdn.ac.lk/',
-        'https: //sired.soc.pdn.ac.lk/',
-        'https://botsoc.soc.pdn.ac.lk/',
+        # 'https: //sired.soc.pdn.ac.lk/',
+        # 'https://botsoc.soc.pdn.ac.lk/',
         'https://csup.soc.pdn.ac.lk/',
-        'https://www.fos.pdn.ac.lk/fosid/'
+        # 'https://www.fos.pdn.ac.lk/fosid/'
     ]
 
     custom_settings = {
@@ -26,11 +26,12 @@ class WebinarbotSpider(scrapy.Spider):
 
     items = []
     item = WebinarItem()
-    need_urls = ['meet', 'zoom', 'form']
+    need_urls = ['meet', 'zoom', 'forms']
 
     def parse(self, response):
         tag_selector = response.xpath('//a')
         for tag in tag_selector:
+            link_tag = tag.xpath('@href')
             link = tag.xpath('@href').extract_first()
 
             for url in self.need_urls:
@@ -39,11 +40,16 @@ class WebinarbotSpider(scrapy.Spider):
                     if not parent.xpath('//div'):
                         parent = tag.xpath('../../..')
 
-                    texts = parent.xpath('text()').extract()
-                    filtered_date = self.filter_data(texts)
-                    filtered_date['TITLE'] = parent.xpath('//title/text()').extract()
+                    texts = parent.xpath('.//text()').extract()
+                    filtered_data = self.filter_data(texts)
+                    filtered_data['TITLE'] = parent.xpath('//title/text()').extract()
+                    filtered_data['AREA_LABEL'] = parent.xpath('//area-label/text()').extract()
 
-                    self.items.append([link, str(filtered_date)])
+                    print(texts)
+                    with open('texts.txt', 'a', encoding='utf-8') as file:
+                        file.write(str(parent.get()).strip() + '\n\n\n')
+
+                    self.items.append([link, str(filtered_data)])
 
             if link is not None and (str(link).find('/download') == -1 or str(link).find('/archive') == -1):
                 yield response.follow(link, callback=self.parse)
