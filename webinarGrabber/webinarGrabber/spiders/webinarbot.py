@@ -14,10 +14,10 @@ class WebinarbotSpider(scrapy.Spider):
     ]
     start_urls = [
         'https://sci.pdn.ac.lk/',
-        # 'https: //sired.soc.pdn.ac.lk/',
-        # 'https://botsoc.soc.pdn.ac.lk/',
         'https://csup.soc.pdn.ac.lk/',
-        # 'https://www.fos.pdn.ac.lk/fosid/'
+        'https: //sired.soc.pdn.ac.lk/',
+        'https://botsoc.soc.pdn.ac.lk/',
+        'https://www.fos.pdn.ac.lk/fosid/'
     ]
 
     custom_settings = {
@@ -31,7 +31,6 @@ class WebinarbotSpider(scrapy.Spider):
     def parse(self, response):
         tag_selector = response.xpath('//a')
         for tag in tag_selector:
-            link_tag = tag.xpath('@href')
             link = tag.xpath('@href').extract_first()
 
             for url in self.need_urls:
@@ -45,7 +44,10 @@ class WebinarbotSpider(scrapy.Spider):
                     filtered_data['TITLE'] = parent.xpath('//title/text()').extract()
                     filtered_data['AREA_LABEL'] = parent.xpath('//area-label/text()').extract()
 
-                    print(texts)
+                    self.item['link'] = link
+                    self.item['parent'] = str(parent.get())
+                    yield self.item
+
                     with open('texts.txt', 'a', encoding='utf-8') as file:
                         file.write(str(parent.get()).strip() + '\n\n\n')
 
