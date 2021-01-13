@@ -71,7 +71,8 @@ ROBOTSTXT_OBEY = True
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
     'webinarGrabber.pipelines.WebinargrabberPipeline': 300,
-    'webinarGrabber.pipelines.WebinargrabberDataframePipeline': 800,
+    'webinarGrabber.pipelines.DuplicatesPipeline': 300,
+    'webinarGrabber.pipelines.DataframePipeline': 800,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)

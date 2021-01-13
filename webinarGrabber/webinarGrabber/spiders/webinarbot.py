@@ -1,5 +1,5 @@
 import scrapy
-from .items import WebinarItem
+from ..items import WebinarItem
 import spacy
 
 
@@ -42,10 +42,10 @@ class WebinarbotSpider(scrapy.Spider):
                     texts = parent.xpath('.//text()').extract()
                     filtered_data = self.filter_data(texts)
                     filtered_data['TITLE'] = parent.xpath('//title/text()').extract()
-                    filtered_data['AREA_LABEL'] = parent.xpath('//area-label/text()').extract()
+                    filtered_data['AREA_LABEL'] = parent.xpath('@title').extract()
 
                     self.item['link'] = link
-                    self.item['parent'] = str(parent.get())
+                    self.item['texts'] = filtered_data
                     yield self.item
 
                     with open('texts.txt', 'a', encoding='utf-8') as file:
@@ -53,7 +53,7 @@ class WebinarbotSpider(scrapy.Spider):
 
                     self.items.append([link, str(filtered_data)])
 
-            if link is not None and (str(link).find('/download') == -1 or str(link).find('/archive') == -1):
+            if link is not None and (str(link).find('download') == -1 or str(link).find('archive') == -1):
                 yield response.follow(link, callback=self.parse)
 
     def filter_data(self, texts):

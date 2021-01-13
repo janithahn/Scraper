@@ -7,6 +7,8 @@
 # useful for handling different item types with a single interface
 from itemadapter import ItemAdapter
 import pandas as pd
+from .items import WebinarItem
+from scrapy.exceptions import DropItem
 
 
 class WebinargrabberPipeline:
@@ -15,7 +17,7 @@ class WebinargrabberPipeline:
         return item
 
 
-class WebinargrabberDataframePipeline:
+class DataframePipeline:
 
     def close_spider(self, spider):
         if spider.name == 'webinarbot':
@@ -26,3 +28,18 @@ class WebinargrabberDataframePipeline:
             df.to_csv('filtered_data.csv')
 
         return None
+
+
+class DuplicatesPipeline:
+
+    def __init__(self):
+        self.ids_seen = set()
+
+    def process_item(self, item, spider):
+        if spider.name == 'webinarbot':
+            adapter = WebinarItem(item)
+            if adapter['link'] in self.ids_seen:
+                raise DropItem(f"Duplicate item found: {item!r}")
+            else:
+                self.ids_seen.add(adapter['link'])
+                return item
