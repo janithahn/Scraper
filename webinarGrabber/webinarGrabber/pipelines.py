@@ -77,7 +77,11 @@ class MongoPipeline:
             if adapter['link'] in self.ids_seen:
                 raise DropItem(f"Duplicate item found: {item!r}")
             else:
-                self.db[self.collection_name].insert_one(adapter.asdict())
+                if self.db[self.collection_name].find({"link": adapter["link"]}).count() > 0:
+                    # raise DropItem(f"Duplicate item found in the database: {item!r}")
+                    self.db[self.collection_name].update({"link": adapter["link"]}, adapter.asdict())
+                else:
+                    self.db[self.collection_name].insert_one(adapter.asdict())
                 self.ids_seen.add(adapter['link'])
                 return item
         return None
