@@ -6,10 +6,10 @@ import spacy
 class WebinarbotSpider(scrapy.Spider):
     name = 'webinarbot'
     allowed_domains = [
-        'sci.pdn.ac.lk',
-        'www.fos.pdn.ac.lk',
-        'sired.soc.pdn.ac.lk',
-        'botsoc.soc.pdn.ac.lk',
+        # 'sci.pdn.ac.lk',
+        # 'www.fos.pdn.ac.lk',
+        # 'sired.soc.pdn.ac.lk',
+        # 'botsoc.soc.pdn.ac.lk',
         'csup.soc.pdn.ac.lk'
     ]
     start_urls = [
