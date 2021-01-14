@@ -195,7 +195,7 @@ def remove_tags(text, which_ones=(), keep=(), encoding=None):
 
     def remove_tag(m):
         tag = m.group(1)
-        return u'' if will_remove(tag) else m.group(0)
+        return u'\n' if will_remove(tag) else m.group(0)
 
     regex = '</?([^ >/]+).*?>'
     retags = re.compile(regex, re.DOTALL | re.IGNORECASE)

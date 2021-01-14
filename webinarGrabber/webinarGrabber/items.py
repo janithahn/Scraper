@@ -13,5 +13,6 @@ class WebinarItem(scrapy.Item):
 
 class EventItem(scrapy.Item):
     title = scrapy.Field()
+    link = scrapy.Field()
     texts = scrapy.Field()
-    filtered_texts = scrapy.Field()
+    sentences = scrapy.Field()

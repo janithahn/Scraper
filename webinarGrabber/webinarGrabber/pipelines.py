@@ -12,7 +12,8 @@ import pymongo
 from itemadapter import ItemAdapter
 import json
 import spacy
-from spacy.lang.en import English
+from .items import EventItem
+import re
 
 
 class WebinargrabberPipeline:
@@ -46,46 +47,6 @@ class DuplicatesPipeline:
                 raise DropItem(f"Duplicate item found: {item!r}")
             else:
                 self.ids_seen.add(adapter['link'])
-                return item
-
-
-class EventDuplicatesPipeline:
-
-    def __init__(self):
-        self.ids_seen = set()
-
-    def open_spider(self, spider):
-        self.file = open('events.json', 'w')
-
-    def close_spider(self, spider):
-        self.file.close()
-
-    def process_item(self, item, spider):
-        if spider.name == 'eventbot':
-            adapter = ItemAdapter(item)
-            nlp = spacy.load("en_core_web_sm")
-            nlp_en = English()
-            sbd = nlp_en.create_pipe('sentencizer')
-            nlp_en.add_pipe(sbd)
-
-            if adapter['title'] in self.ids_seen:
-                raise DropItem(f"Duplicate item found: {item!r}")
-            else:
-                self.ids_seen.add(adapter['title'])
-
-                doc_sen = nlp_en(adapter['texts'])
-
-                for sent in doc_sen.sents:
-                    adapter['filtered_texts'] += sent + '\n'
-
-                '''for doc in nlp.pipe(adapter['texts'], disable=["tagger", "parser"]):
-                    adapter['filtered_texts'] = [(ent.label_, ent.text) for ent in doc.ents]'''
-
-                line = json.dumps(adapter.asdict()) + "\n"
-                self.file.write(line)
-
-                with open('eventbot.txt', 'a', encoding='utf-8') as file:
-                    file.write(str(adapter) + '\n\n\n-------------------------------------------\n\n\n')
                 return item
 
 
@@ -127,3 +88,38 @@ class MongoPipeline:
                 self.ids_seen.add(adapter['link'])
                 return item
         return None
+
+
+class EventDuplicatesPipeline:
+
+    def __init__(self):
+        self.ids_seen = set()
+
+    def open_spider(self, spider):
+        self.file = open('events.json', 'w')
+
+    def close_spider(self, spider):
+        self.file.close()
+
+    def process_item(self, item, spider):
+        if spider.name == 'eventbot':
+            adapter = EventItem(item)
+            nlp = spacy.load("en_core_web_sm")
+
+            if adapter['title'] in self.ids_seen:
+                raise DropItem(f"Duplicate item found: {item!r}")
+            else:
+                self.ids_seen.add(adapter['title'])
+
+                doc = nlp(adapter['texts'])
+                sentences = list(doc.sents)
+                # str(sent).split()
+                sentences = [" ".join(re.split(r"\s{2,}", str(sent))) for sent in sentences]
+                adapter['sentences'] = str(sentences)
+
+                line = json.dumps(dict(adapter)) + "\n"
+                self.file.write(line)
+
+                with open('events.txt', 'a', encoding='utf-8') as file:
+                    file.write(str(adapter) + '\n\n\n-------------------------------------------\n\n\n')
+                return item
