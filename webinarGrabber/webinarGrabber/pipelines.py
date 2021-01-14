@@ -92,14 +92,28 @@ class MongoPipeline:
 
 class EventDuplicatesPipeline:
 
-    def __init__(self):
+    collection_name = 'event_collection'
+
+    def __init__(self, mongo_uri, mongo_db):
+        self.mongo_uri = mongo_uri
+        self.mongo_db = mongo_db
         self.ids_seen = set()
 
     def open_spider(self, spider):
         self.file = open('events.json', 'w')
+        self.client = pymongo.MongoClient(self.mongo_uri)
+        self.db = self.client[self.mongo_db]
 
     def close_spider(self, spider):
         self.file.close()
+        self.client.close()
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        return cls(
+            mongo_uri=crawler.settings.get('mongodb://127.0.0.1:27017'),
+            mongo_db=crawler.settings.get('sciCrawler', 'sciCrawler')
+        )
 
     def process_item(self, item, spider):
         if spider.name == 'eventbot':
@@ -116,7 +130,7 @@ class EventDuplicatesPipeline:
                     sentences = list(doc.sents)
                     # str(sent).split()
                     sentences = [" ".join(re.split(r"\s{2,}", str(sent))) for sent in sentences]
-                    adapter['sentences'] = str(sentences)
+                    adapter['sentences'] = sentences
 
                     write_dic = {
                         'title': adapter['title'],
@@ -127,7 +141,10 @@ class EventDuplicatesPipeline:
                     line = json.dumps(dict(write_dic)) + "\n"
                     self.file.write(line)
 
-                    with open('events.txt', 'a', encoding='utf-8') as file:
-                        file.write(str(adapter) + '\n\n\n-------------------------------------------\n\n\n')
+                    if self.db[self.collection_name].find({"title": adapter["title"]}).count() > 0:
+                        # raise DropItem(f"Duplicate item found in the database: {item!r}")
+                        self.db[self.collection_name].update({"title": adapter["title"]}, write_dic)
+                    else:
+                        self.db[self.collection_name].insert_one(write_dic)
                     return item
                 return None
