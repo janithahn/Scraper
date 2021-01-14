@@ -109,17 +109,25 @@ class EventDuplicatesPipeline:
             if adapter['title'] in self.ids_seen:
                 raise DropItem(f"Duplicate item found: {item!r}")
             else:
-                self.ids_seen.add(adapter['title'])
+                if 'event' in adapter['link'] or 'news' in adapter['link']:
+                    self.ids_seen.add(adapter['title'])
 
-                doc = nlp(adapter['texts'])
-                sentences = list(doc.sents)
-                # str(sent).split()
-                sentences = [" ".join(re.split(r"\s{2,}", str(sent))) for sent in sentences]
-                adapter['sentences'] = str(sentences)
+                    doc = nlp(adapter['texts'])
+                    sentences = list(doc.sents)
+                    # str(sent).split()
+                    sentences = [" ".join(re.split(r"\s{2,}", str(sent))) for sent in sentences]
+                    adapter['sentences'] = str(sentences)
 
-                line = json.dumps(dict(adapter)) + "\n"
-                self.file.write(line)
+                    write_dic = {
+                        'title': adapter['title'],
+                        'link': adapter['link'],
+                        'sentences': adapter['sentences']
+                    }
 
-                with open('events.txt', 'a', encoding='utf-8') as file:
-                    file.write(str(adapter) + '\n\n\n-------------------------------------------\n\n\n')
-                return item
+                    line = json.dumps(dict(write_dic)) + "\n"
+                    self.file.write(line)
+
+                    with open('events.txt', 'a', encoding='utf-8') as file:
+                        file.write(str(adapter) + '\n\n\n-------------------------------------------\n\n\n')
+                    return item
+                return None
