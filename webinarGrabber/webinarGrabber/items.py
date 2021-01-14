@@ -9,3 +9,9 @@ import scrapy
 class WebinarItem(scrapy.Item):
     link = scrapy.Field()
     texts = scrapy.Field()
+
+
+class EventItem(scrapy.Item):
+    title = scrapy.Field()
+    texts = scrapy.Field()
+    filtered_texts = scrapy.Field()
