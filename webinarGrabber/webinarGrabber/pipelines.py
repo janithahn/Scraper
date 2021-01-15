@@ -30,7 +30,7 @@ class DataframePipeline:
             df = df.set_index('Link').drop_duplicates()
 
             print(df)
-            df.to_csv('filtered_data.csv')
+            df.to_csv('webinars.csv')
 
         return None
 
@@ -50,49 +50,10 @@ class DuplicatesPipeline:
                 return item
 
 
-class MongoPipeline:
-
-    collection_name = 'webinar_collection'
-
-    def __init__(self, mongo_uri, mongo_db):
-        self.mongo_uri = mongo_uri
-        self.mongo_db = mongo_db
-        self.ids_seen = set()
-
-    @classmethod
-    def from_crawler(cls, crawler):
-        return cls(
-            mongo_uri=crawler.settings.get('mongodb://127.0.0.1:27017'),
-            mongo_db=crawler.settings.get('sciCrawler', 'sciCrawler')
-        )
-
-    def open_spider(self, spider):
-        self.client = pymongo.MongoClient(self.mongo_uri)
-        self.db = self.client[self.mongo_db]
-
-    def close_spider(self, spider):
-        self.client.close()
-
-    '''Saving to mongodb while filtering duplicates'''
-    def process_item(self, item, spider):
-        if spider.name == 'webinarbot':
-            adapter = ItemAdapter(item)
-            if adapter['link'] in self.ids_seen:
-                raise DropItem(f"Duplicate item found: {item!r}")
-            else:
-                if self.db[self.collection_name].find({"link": adapter["link"]}).count() > 0:
-                    # raise DropItem(f"Duplicate item found in the database: {item!r}")
-                    self.db[self.collection_name].update({"link": adapter["link"]}, adapter.asdict())
-                else:
-                    self.db[self.collection_name].insert_one(adapter.asdict())
-                self.ids_seen.add(adapter['link'])
-                return item
-        return None
-
-
 class EventDuplicatesPipeline:
 
-    collection_name = 'event_collection'
+    event_collection = 'event_collection'
+    webinar_collection = 'webinar_collection'
 
     def __init__(self, mongo_uri, mongo_db):
         self.mongo_uri = mongo_uri
@@ -100,7 +61,10 @@ class EventDuplicatesPipeline:
         self.ids_seen = set()
 
     def open_spider(self, spider):
-        self.file = open('events.json', 'w')
+        if spider.name == 'webinarbot':
+            self.file = open('webinars.json', 'w')
+        elif spider.name == 'eventbot':
+            self.file = open('events.json', 'w')
         self.client = pymongo.MongoClient(self.mongo_uri)
         self.db = self.client[self.mongo_db]
 
@@ -141,10 +105,27 @@ class EventDuplicatesPipeline:
                     line = json.dumps(dict(write_dic)) + "\n"
                     self.file.write(line)
 
-                    if self.db[self.collection_name].find({"title": adapter["title"]}).count() > 0:
+                    if self.db[self.event_collection].find({"title": adapter["title"]}).count() > 0:
                         # raise DropItem(f"Duplicate item found in the database: {item!r}")
-                        self.db[self.collection_name].update({"title": adapter["title"]}, write_dic)
+                        self.db[self.event_collection].update({"title": adapter["title"]}, write_dic)
                     else:
-                        self.db[self.collection_name].insert_one(write_dic)
+                        self.db[self.event_collection].insert_one(write_dic)
                     return item
                 return None
+
+        elif spider.name == 'webinarbot':
+            adapter = ItemAdapter(item)
+            if adapter['link'] in self.ids_seen:
+                raise DropItem(f"Duplicate item found: {item!r}")
+            else:
+                line = json.dumps(adapter.asdict()) + "\n"
+                self.file.write(line)
+
+                if self.db[self.webinar_collection].find({"link": adapter["link"]}).count() > 0:
+                    # raise DropItem(f"Duplicate item found in the database: {item!r}")
+                    self.db[self.webinar_collection].update({"link": adapter["link"]}, adapter.asdict())
+                else:
+                    self.db[self.webinar_collection].insert_one(adapter.asdict())
+                self.ids_seen.add(adapter['link'])
+                return item
+            return None

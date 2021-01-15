@@ -36,13 +36,14 @@ class WebinarbotSpider(scrapy.Spider):
             for url in self.need_urls:
                 if str(link).find(url) != -1:
                     parent = tag.xpath('../..')
-                    if not parent.xpath('//div'):
-                        parent = tag.xpath('../../..')
+                    '''if not parent.xpath('//div'):
+                        parent = tag.xpath('../../..')'''
+                    while len(parent.xpath('//div')) == 0:
+                        parent = parent.xpath('..')
 
                     texts = parent.xpath('.//text()').extract()
                     filtered_data = self.filter_data(texts)
                     filtered_data['TITLE'] = parent.xpath('//title/text()').extract()
-                    filtered_data['AREA_LABEL'] = parent.xpath('@title').extract()
 
                     self.item['link'] = link
                     self.item['texts'] = filtered_data
